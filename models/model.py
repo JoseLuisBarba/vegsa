@@ -3,10 +3,13 @@ from min_max_heap import MinMaxHeap
 from typing import Any, List, Tuple
 from collections import deque
 import numpy as np
+import pandas as pd
 
-
-from src.variables import N, K, coords, a, b, service_time, demands, Q_MAX, VD
+from src.variables import N, K, coords, a, b, service_time, demands, Q_MAX, VD, T 
 from src.functions import Distance, Time, Co2Generation, TransportCost, PddrffValue
+
+
+
 
 class Model():
     def __init__(self, ) -> None:
@@ -131,7 +134,7 @@ class Model():
         return offspring
 
 
-    def decoding(self, chromosome: np.ndarray):
+    def decoding2(self, chromosome: np.ndarray):
         # colocar restriccion a n-vehiculos
         vehicle_n: int =  0 # current vehicle number
         q_n: float =  0  #current load of vehicle
@@ -178,6 +181,183 @@ class Model():
                 q_n = demands[i]
         if r[vehicle_n][-1][0] != 0:
             r[vehicle_n].append([0, vehicle_n])
+        return r
+    
+    def decoding(self, chromosome: np.ndarray, summary: bool= False):
+
+        #summary
+        infoData = {
+            'Vehiculo':[],
+            'Nodoi-1':[],
+            'Nodoi':[],
+            'Distancia':[],
+            'TiempoArco':[],
+            'TW_A':[],
+            'TW_B':[],
+            'Tanque':[],
+            'CO2':[],
+        }
+
+
+        # colocar restricciones a n-vehiculos
+        vehicle_n: int =  0 # numero del vehiculo actual
+        q_n: float =  0  #actual carga
+        fuel_expen_t: float = 0
+        fuel_exp: float = 0 #actual consumo de combustible
+        arrival_t: float = a[0] # el tiempo de llegada al nodo t
+        leave_t: float = a[0] + service_time[0] # tiempo de salida del nodo t
+
+
+        r: dict = dict()  #ruta
+        r[0] = [[0, vehicle_n], ]
+        q_n +=  demands[0] #demanda del almacen siempre es 0
+
+        idx: int = 0
+
+        while idx < len(chromosome):
+            #distancia del nodo i-1 al nodo i
+            if idx == 0:
+                dist_t: float = Distance()(coords[0], coords[chromosome[idx]])
+            else:
+                dist_t: float = Distance()(coords[chromosome[idx-1]], coords[chromosome[idx]])
+            #Tiempo entre arco
+            time_t: float = Time()(dist_t)
+            #Tiempo de llegada del nodo i-1 al nodo i
+            arrival_t = leave_t + time_t
+
+            
+            #consumo de combustible del nodo i-1 al nodo i
+            co2_gen = Co2Generation()(vehicle_n, dist_t)
+            fuel_expen_t += co2_gen
+
+            #carga que queda saliendo del nodo j
+            q_n += demands[chromosome[idx]]
+
+            # si existe un retorno a warehouse del nodo i
+            dist_to_wharehouse: float = Distance()(coords[chromosome[idx]], coords[0])
+            fuel_expen_wh: float = Co2Generation()(vehicle_n, dist_to_wharehouse)
+    
+            #debe tener suficiente tiempo para retornar a warehouse
+            #Si llega antes de tiempo del nodo i-1 al nodo i. el retorno a wharehouse es
+            return_time_t1: float = a[chromosome[idx]] + service_time[chromosome[idx]] + Time()(dist_to_wharehouse)
+            #Si llega dentor de la ventana de tiempo del nodo i-1 al nodo i. el retorno a wharehouse es
+            return_time_t2: float = arrival_t + service_time[chromosome[idx]] + Time()(dist_to_wharehouse)
+            # tiene que tener suficiente combustible para retornar a wharehouse
+            fuel_exp = fuel_expen_t + fuel_expen_wh
+
+
+            # posibles condiciones
+
+            earlyArrivalCond = (
+                arrival_t < a[chromosome[idx]], # la llega debe ser antes de la ventana de tiempo
+                q_n <= Q_MAX[vehicle_n], # cubrir la demanda total no debe superar la capacidad máxima
+                fuel_exp <= T[vehicle_n], # el uso de combustible total más el de regreso no debe superar la capacidad del tanque
+                return_time_t1 <= b[0] # el tiempo total más del regreso no debe superar la ventana de tiempo
+            )
+
+            twArrivalCond = (
+                a[chromosome[idx]] <= arrival_t <= b[chromosome[idx]], # la llega debe ser dentro de la ventana de tiempo
+                q_n <= Q_MAX[vehicle_n], # cubrir la demanda total no debe superar la capacidad máxima
+                fuel_exp <= T[vehicle_n], # el uso de combustible total más el de regreso no debe superar la capacidad del tanque
+                return_time_t2 <= b[0]  # el tiempo total más del regreso no debe superar la ventana de tiempo
+            )
+
+            noArrivalCond = (
+                arrival_t > b[chromosome[idx]], # supera la ventana de tiempo
+                q_n > Q_MAX[vehicle_n], # cubrir supera la capacidad de carga 
+                return_time_t1 > b[0], #no puede regresar a tiempo si llega temprano
+                return_time_t2 > b[0], #no puede regresar a tiempo si llega tarde
+                fuel_exp  > T[vehicle_n] #no alcanza combustible para atender y regresar
+            )
+
+            if all(earlyArrivalCond):
+                # almacenamos viaje
+                r[vehicle_n].append([chromosome[idx], vehicle_n])
+                leave_t = a[chromosome[idx]] + service_time[chromosome[idx]]
+     
+                if idx == 0:
+                    infoData['Nodoi-1'].append(0)
+                    infoData['Nodoi'].append(chromosome[idx])
+                else:
+                    infoData['Nodoi-1'].append(chromosome[idx-1])
+                    infoData['Nodoi'].append(chromosome[idx])
+
+                infoData['Vehiculo'].append(vehicle_n)
+                infoData['Distancia'].append(dist_t) 
+                infoData['TiempoArco'].append(time_t)   
+                infoData['TW_A'].append(a[chromosome[idx]])
+                infoData['TW_B'].append(b[chromosome[idx]])
+                infoData['Tanque'].append(fuel_expen_t)
+                infoData['CO2'].append(co2_gen)
+
+            # arrival in tw
+            elif all(twArrivalCond):
+                r[vehicle_n].append([chromosome[idx], vehicle_n])
+                leave_t = arrival_t + service_time[chromosome[idx]]
+
+                if idx == 0:
+                    infoData['Nodoi-1'].append(0)
+                    infoData['Nodoi'].append(chromosome[idx])
+                else:
+                    infoData['Nodoi-1'].append(chromosome[idx-1])
+                    infoData['Nodoi'].append(chromosome[idx])
+
+                infoData['Vehiculo'].append(vehicle_n)
+                infoData['Distancia'].append(dist_t) 
+                infoData['TiempoArco'].append(time_t)   
+                infoData['TW_A'].append(a[chromosome[idx]])
+                infoData['TW_B'].append(b[chromosome[idx]])
+                infoData['Tanque'].append(fuel_expen_t)
+                infoData['CO2'].append(co2_gen)
+            
+
+            elif any(noArrivalCond):
+                # el nodo no puede ser servido por el vehiculo entonces debe ir a warehouse
+                r[vehicle_n].append([0, vehicle_n]) # add wharehouse as the ending of route
+                dist_t: float = Distance()(coords[chromosome[idx-1]], coords[0])
+                time_t: float = Time()(dist_t)
+                co2_gen_wh = Co2Generation()(vehicle_n, dist_t)
+                fuel_expen_t -= co2_gen
+                fuel_expen_t += co2_gen_wh
+
+
+                #### guardar información #######################
+                infoData['Nodoi-1'].append(chromosome[idx-1])
+                infoData['Nodoi'].append(0)
+
+                infoData['Vehiculo'].append(vehicle_n)
+                infoData['Distancia'].append(dist_t) 
+                infoData['TiempoArco'].append(time_t)  
+
+                infoData['TW_A'].append(a[0])
+                infoData['TW_B'].append(b[0])
+
+                infoData['Tanque'].append(fuel_expen_t)
+                infoData['CO2'].append(co2_gen_wh)
+
+
+
+                # lo debe atender otro vehiculo
+                vehicle_n += 1 
+                print('other')
+                r[vehicle_n] = [[0, vehicle_n], ] # add the depot as the beginning of route
+                dist_t: float = 0
+                time_t: float = Time()(dist_t)
+                co2_gen = Co2Generation()(vehicle_n, dist_t)
+                fuel_expen_t = 0
+                q_n = 0
+                leave_t = a[0]
+
+                continue
+     
+            idx += 1
+
+        if r[vehicle_n][-1][0] != 0:
+            r[vehicle_n].append([0, vehicle_n])
+
+        if summary:
+            summdf= pd.DataFrame(infoData)
+            return r, summdf
         return r
 
     def objective_function(self, chromosome: np.ndarray) -> float:

@@ -42,3 +42,5 @@ class PddrffValue:
             float: _description_
         """
         return  q_x + (1 / (p_x + 1))
+    
+

@@ -28,13 +28,11 @@ from typing import List, Tuple
 
 
 x = Model()
-x.evolutionary_search(
-    PopSize=1000,
-    ChroSize= 11,
-    ElitePopSize= 10,
-    subPopSize= 20,
-    MaxGenerations= 100
-)
+
+
+print(x.decoding(np.array([7,3,4,11,10,9,5,2,8,1,6])))
+
+x = {0: [[0, 0], [7, 0], [0, 0]], 1: [[0, 1], [3, 1], [4, 1], [11, 1], [10, 1], [9, 1], [5, 1], [0, 1]], 2: [[0, 2], [2, 2], [8, 2], [1, 2], [0, 2]], 3: [[0, 3], [6, 3], [0, 3]]}
 
 
 # print('##################TEST###############')
