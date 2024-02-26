@@ -213,10 +213,10 @@ class Model():
         q_n +=  demands[0] #demanda del almacen siempre es 0
 
         idx: int = 0
-
+        change: bool = True
         while idx < len(chromosome):
             #distancia del nodo i-1 al nodo i
-            if idx == 0:
+            if idx == 0 or change:
                 dist_t: float = Distance()(coords[0], coords[chromosome[idx]])
             else:
                 dist_t: float = Distance()(coords[chromosome[idx-1]], coords[chromosome[idx]])
@@ -275,9 +275,10 @@ class Model():
                 r[vehicle_n].append([chromosome[idx], vehicle_n])
                 leave_t = a[chromosome[idx]] + service_time[chromosome[idx]]
      
-                if idx == 0:
+                if idx == 0 or change:
                     infoData['Nodoi-1'].append(0)
                     infoData['Nodoi'].append(chromosome[idx])
+                    change = False
                 else:
                     infoData['Nodoi-1'].append(chromosome[idx-1])
                     infoData['Nodoi'].append(chromosome[idx])
@@ -295,9 +296,10 @@ class Model():
                 r[vehicle_n].append([chromosome[idx], vehicle_n])
                 leave_t = arrival_t + service_time[chromosome[idx]]
 
-                if idx == 0:
+                if idx == 0 or change:
                     infoData['Nodoi-1'].append(0)
                     infoData['Nodoi'].append(chromosome[idx])
+                    change = False
                 else:
                     infoData['Nodoi-1'].append(chromosome[idx-1])
                     infoData['Nodoi'].append(chromosome[idx])
@@ -313,7 +315,7 @@ class Model():
 
             elif any(noArrivalCond):
                 # el nodo no puede ser servido por el vehiculo entonces debe ir a warehouse
-                r[vehicle_n].append([0, vehicle_n]) # add wharehouse as the ending of route
+                r[vehicle_n].append([0, vehicle_n]) 
                 dist_t: float = Distance()(coords[chromosome[idx-1]], coords[0])
                 time_t: float = Time()(dist_t)
                 co2_gen_wh = Co2Generation()(vehicle_n, dist_t)
@@ -336,17 +338,18 @@ class Model():
                 infoData['CO2'].append(co2_gen_wh)
 
 
-
+                # correguir
                 # lo debe atender otro vehiculo
                 vehicle_n += 1 
-                print('other')
-                r[vehicle_n] = [[0, vehicle_n], ] # add the depot as the beginning of route
+
+                r[vehicle_n] = [[0, vehicle_n], ] 
                 dist_t: float = 0
                 time_t: float = Time()(dist_t)
                 co2_gen = Co2Generation()(vehicle_n, dist_t)
                 fuel_expen_t = 0
                 q_n = 0
                 leave_t = a[0]
+                change = True
 
                 continue
      
@@ -354,6 +357,27 @@ class Model():
 
         if r[vehicle_n][-1][0] != 0:
             r[vehicle_n].append([0, vehicle_n])
+
+            dist_t: float = Distance()(coords[chromosome[idx-1]], coords[0])
+            time_t: float = Time()(dist_t)
+            co2_gen_wh = Co2Generation()(vehicle_n, dist_t)
+            #fuel_expen_t -= co2_gen
+            fuel_expen_t += co2_gen_wh
+
+
+            #### guardar información #######################
+            infoData['Nodoi-1'].append(chromosome[idx-1])
+            infoData['Nodoi'].append(0)
+
+            infoData['Vehiculo'].append(vehicle_n)
+            infoData['Distancia'].append(dist_t) 
+            infoData['TiempoArco'].append(time_t)  
+
+            infoData['TW_A'].append(a[0])
+            infoData['TW_B'].append(b[0])
+
+            infoData['Tanque'].append(fuel_expen_t)
+            infoData['CO2'].append(co2_gen_wh)
 
         if summary:
             summdf= pd.DataFrame(infoData)
