@@ -33,7 +33,6 @@ K = np.array([
     0, 
     1, 
     2,
-    4,
 ])
 
 
@@ -67,7 +66,7 @@ demands = np.array([
     10,
     10,
     10,
-    0        
+    0
 ])
 
 #time windows    
@@ -83,8 +82,8 @@ a = np.array([
     0,
     0,
     7,
-    5,  
-    4,
+    5, 
+    4, 
 ])
 
 b = np.array([
@@ -116,7 +115,7 @@ service_time = np.array([
     0,
     0,
     0,
-    0,
+    0
 ])
 
 # Capacidad máxima del tanque de combustible 
@@ -124,8 +123,7 @@ service_time = np.array([
 T = np.array([
     15,
     15,
-    15,
-    15,    
+    15,   
 ])  
 
 # Emisión de CO2 del vehiculo colector en 
@@ -133,7 +131,6 @@ T = np.array([
 EM = np.array([
     2.7,
     2.7,
-    2.7, 
     2.7,   
 ])  
 
@@ -142,5 +139,4 @@ Q_MAX = np.array([
 	80,
 	80,
 	80,
-    80
 ])
