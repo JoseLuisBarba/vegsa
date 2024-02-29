@@ -1,4 +1,4 @@
-from models.model import Model
+from models.model2 import CES
 from src.variables import a, coords
 from src.functions import Distance, Time, Co2Generation, TransportCost
 from collections import deque
@@ -27,9 +27,9 @@ from typing import List, Tuple
 
 
 
-x = Model()
+x = CES()
 
-x.evolutionary_search(100,11,10,20,20)
+x.climatic_evolutionary_search(100,11,10,20,20)
 
 # print('##################TEST###############')
 

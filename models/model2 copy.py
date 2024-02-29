@@ -112,27 +112,8 @@ class x_sa(ABC):
 
 class CES:
 
-    def __init__(self, 
-            cooling_operator: sa_cooling_operator,
-            step_max: int = 100, 
-            t_min: float = 0, 
-            t_max: float = 100,
-            ChromSize: int = 11
-        ) -> None:
-        x0: np.ndarray = self.nearestNeighborHeuristic(ChromSize)
-        self.t: float = t_max
-        self.t_max: float = t_max
-        self.t_min : float  = t_min
-        self.step_max: int = step_max
-        self.hist: list[Any] = []
-        self.cooling_operator: sa_cooling_operator = cooling_operator
-        self._x_current: x_sa = x0
-        self._e_current: float = self.objective_function(x0)
-        self._x_best: x_sa = self._x_current
-        self._e_best: float = self._e_current
-        self.step: int = 0
-        self.accept: int = 0
-        self._band: bool = False
+    def __init__(self):
+        pass
 
     def proximity(self, waitTime: float, urgencyTime: float,  timeRemaining: float, alpha: float=0.33, beta: float= 0.34, gamma: float=0.33) -> float:
         return alpha * waitTime + beta * urgencyTime + gamma * timeRemaining
@@ -270,106 +251,133 @@ class CES:
                 lastSelected = proximityNode
         return np.array(chromList)
 
+
+
+
+
+
+    # def __init__(self, 
+    #         x0: np.ndarray,  
+    #         cooling_operator: sa_cooling_operator,
+    #         step_max: int = 100, 
+    #         t_min: float = 0, 
+    #         t_max: float = 100,
+    #     ) -> None:
+
+    #     self.t: float = t_max
+    #     self.t_max: float = t_max
+    #     self.t_min : float  = t_min
+    #     self.step_max: int = step_max
+    #     self.hist: list[Any] = []
+    #     self.cooling_operator: sa_cooling_operator = cooling_operator
+    #     self._x_current: x_sa = x0
+    #     self._e_current: float = self.objective_function(x0)
+    #     self._x_best: x_sa = self._x_current
+    #     self._e_best: float = self._e_current
+    #     self.step: int = 0
+    #     self.accept: int = 0
+    #     self._band: bool = False
+
     
-    def stopping_restrictions(self, step):
-        return step < self.step_max and self.t >= self.t_min and self.t > 0
+    # def stopping_restrictions(self, step):
+    #     return step < self.step_max and self.t >= self.t_min and self.t > 0
     
-    def generate_neighbor(self, x: np.ndarray):
-        pass
+    # def generate_neighbor(self, x: np.ndarray):
+    #     pass
     
-    def solve(self,) -> None:
-        self.step = 1 
-        self.accept = 0
-        while self.stopping_restrictions(self.step):
+    # def solve(self,) -> None:
+    #     self.step = 1 
+    #     self.accept = 0
+    #     while self.stopping_restrictions(self.step):
             
-            x_neighbor = self.generate_neighbor(self._x_current) # conseguimos un vecino
-            e_neighbor = self.objective_function(x_neighbor)
-            e_delta =  e_neighbor - self._e_current # calculamos la diff de energia del vecino con la actual
+    #         x_neighbor = self.generate_neighbor(self._x_current) # conseguimos un vecino
+    #         e_neighbor = self.objective_function(x_neighbor)
+    #         e_delta =  e_neighbor - self._e_current # calculamos la diff de energia del vecino con la actual
 
-            if random() < self.safe_exp(- e_delta / self.t): 
-                self._x_current = x_neighbor 
-                self._e_current = e_neighbor 
-                self.accept += 1 
+    #         if random() < self.safe_exp(- e_delta / self.t): 
+    #             self._x_current = x_neighbor 
+    #             self._e_current = e_neighbor 
+    #             self.accept += 1 
 
-            if self._e_current < self._e_best: 
-                self._e_best = self.e_current 
-                self._x_best = self.x_current
+    #         if self._e_current < self._e_best: 
+    #             self._e_best = self.e_current 
+    #             self._x_best = self.x_current
 
-            self.update_history()
-            self.t = self.cooling_operator(self.step) #enfriamos
-            self.step += 1
-        self._band = True
-
-
-    @abstractmethod
-    def results(self):
-        if self._band:
-            init(autoreset=True)
-            print(Fore.YELLOW + 'results: ')
-            print(Fore.CYAN + '{')
-            print(f'{Fore.MAGENTA}\tcost:{Style.RESET_ALL} {Fore.GREEN} {self._e_best}')
-            print(f'{Fore.YELLOW}\tinitial_temp:{Style.RESET_ALL} {Fore.GREEN}{self.t_max}')
-            print(f'{Fore.YELLOW}\tfinal_temp:{Style.RESET_ALL} {Fore.GREEN}{self.t}')
-            print(f'{Fore.LIGHTRED_EX}\tmax_steps:{Style.RESET_ALL} {Fore.GREEN}{self.step_max}')
-            print(f'{Fore.LIGHTGREEN_EX}\tfinal_step:{Style.RESET_ALL} {Fore.GREEN}{self.step}')
-            print(f'{Fore.YELLOW}\tfinal_energy:{Style.RESET_ALL} {Fore.GREEN}{self._e_best}')
-            print(Fore.CYAN + '}')
-        else:
-            print('musts first execute the solve method.')
+    #         self.update_history()
+    #         self.t = self.cooling_operator(self.step) #enfriamos
+    #         self.step += 1
+    #     self._band = True
 
 
-    @property
-    def x_current(self):
-        return self._x_current
-
-    @property
-    def e_current(self):
-        return self._e_current
-
-    @property
-    def x_best(self):
-        return self._x_best
-
-    @x_best.setter
-    def x_best(self, value):
-        self._x_best = value
-
-    @property
-    def e_best(self):
-        return self._e_best
-
-    @e_best.setter
-    def e_best(self, value):
-        self._e_best = value
+    # @abstractmethod
+    # def results(self):
+    #     if self._band:
+    #         init(autoreset=True)
+    #         print(Fore.YELLOW + 'results: ')
+    #         print(Fore.CYAN + '{')
+    #         print(f'{Fore.MAGENTA}\tcost:{Style.RESET_ALL} {Fore.GREEN} {self._e_best}')
+    #         print(f'{Fore.YELLOW}\tinitial_temp:{Style.RESET_ALL} {Fore.GREEN}{self.t_max}')
+    #         print(f'{Fore.YELLOW}\tfinal_temp:{Style.RESET_ALL} {Fore.GREEN}{self.t}')
+    #         print(f'{Fore.LIGHTRED_EX}\tmax_steps:{Style.RESET_ALL} {Fore.GREEN}{self.step_max}')
+    #         print(f'{Fore.LIGHTGREEN_EX}\tfinal_step:{Style.RESET_ALL} {Fore.GREEN}{self.step}')
+    #         print(f'{Fore.YELLOW}\tfinal_energy:{Style.RESET_ALL} {Fore.GREEN}{self._e_best}')
+    #         print(Fore.CYAN + '}')
+    #     else:
+    #         print('musts first execute the solve method.')
 
 
+    # @property
+    # def x_current(self):
+    #     return self._x_current
 
-    def update_history(self,):
-        self.hist.append(
-            {
-                'step': self.step,
-                'temperature': self.t,
-                'e_best': self._e_best,
-                'x_best': self._x_best
-            }
-        )
+    # @property
+    # def e_current(self):
+    #     return self._e_current
 
-    def draw_energy_plot(self):
+    # @property
+    # def x_best(self):
+    #     return self._x_best
+
+    # @x_best.setter
+    # def x_best(self, value):
+    #     self._x_best = value
+
+    # @property
+    # def e_best(self):
+    #     return self._e_best
+
+    # @e_best.setter
+    # def e_best(self, value):
+    #     self._e_best = value
+
+
+
+    # def update_history(self,):
+    #     self.hist.append(
+    #         {
+    #             'step': self.step,
+    #             'temperature': self.t,
+    #             'e_best': self._e_best,
+    #             'x_best': self._x_best
+    #         }
+    #     )
+
+    # def draw_energy_plot(self):
         
-        steps = [entry['step'] for entry in self.hist]
-        energy_values = [entry['e_best'] for entry in self.hist]
+    #     steps = [entry['step'] for entry in self.hist]
+    #     energy_values = [entry['e_best'] for entry in self.hist]
 
-        fig = px.line(x=steps, y=energy_values, labels={'x': 'Step', 'y': 'Best Energy Value'},
-                      title='Optimization Progress', markers=True, line_shape='linear')
+    #     fig = px.line(x=steps, y=energy_values, labels={'x': 'Step', 'y': 'Best Energy Value'},
+    #                   title='Optimization Progress', markers=True, line_shape='linear')
 
-        fig.show()
+    #     fig.show()
         
             
-    def safe_exp(self, x):
-        try: 
-            return exp(x)
-        except: 
-            return 0
+    # def safe_exp(self, x):
+    #     try: 
+    #         return exp(x)
+    #     except: 
+    #         return 0
 
 
 
@@ -386,10 +394,8 @@ class CES:
         np.random.shuffle(chromosome)
         return chromosome
 
-    def encoding(self, route: dict) -> np.ndarray:
-        values = [item[0] for sublist in route.values() for item in sublist if item[0] != 0]
-        result_array = np.array(values)
-        return result_array
+    def encoding(self):
+        return N[1:-1].copy() #only vertex, no wharehouse
     
 
     def mutation_operator(self, chromosome_i: np.ndarray):
@@ -796,10 +802,13 @@ class CES:
 
     def bin_tournament_selection(self, x1: np.ndarray, x2: np.ndarray) -> np.ndarray:
 
-        if self.objective_function(x1) < self.objective_function(x2):
+        if self.objective_function(x1) > self.objective_function(x2):
             return x1
         return x2
         
+
+
+
 
     def differentialExchangeSequence(self,  s1: np.ndarray, s2: np.ndarray) -> List[Tuple[int]]:
         s = s2.copy()
@@ -824,76 +833,55 @@ class CES:
             #print(i,j)
             s2[j], s2[i] = s2[i], s2[j] #swap
         return s2
-    
-    def diffPopulationImprovement(self, best: np.ndarray, population: np.ndarray) -> np.ndarray:
-        popCopy = population.copy()
-        for i in range(0, population.shape[0]):
-            popCopy[i] = self.differentialExchangeSequence(best,popCopy[i])
-            if self.objective_function(popCopy[i]) < self.objective_function(population[i]):
-                print(True)
-                population[i] = popCopy[i]
-        return population
             
-
-    def bestIndividual(self, population: np.ndarray) -> np.ndarray:
-        objects_values = [self.objective_function(individual) for individual in population]
-        best_idx = np.argmin(objects_values)
-        best = population[best_idx]
-        return best.copy()
+    def simpleInsertionSearch(self, chromosome: np.ndarray):
+        pass
 
 
-    def lambdaInterchange(self, chrom: np.ndarray, lambdaValue: int=2) -> np.ndarray:
-        chrom = chrom.astype(int)
-        best: float = self.objective_function(chrom)
-        decode: dict = self.decoding(chrom) 
-        n_routes: int = len(decode)
-
-        x, y = np.random.choice(range(n_routes), size=2, replace=False)
-
-        i_index = np.random.choice(range(0,len(decode[x])-1), size=1)[0]
-        j_index = np.random.choice(range(0,len(decode[y])-1), size=1)[0]
-
-        decode[x][i_index], decode[y][j_index] = decode[y][j_index], decode[x][i_index]
+    # def evolutionary_search(self, PopSize: int, ChroSize: int, ElitePopSize: int=0, subPopSize: int=0, MaxGenerations: int=0):
+     
+    #     t: int = 0
         
-        new_chrom = self.encoding(decode)
-        new_obj = self.objective_function(new_chrom)
+    #     population_t = self.initial_population(PopSize, ChroSize)
+    #     # chooseIndex = np.random.randint(0, population_t.shape[0])
+    #     # bestChrom = population_t[chooseIndex].copy()
 
-        if new_obj < best:
-            return new_chrom
-        return chrom
-    
-    def normalInterchange(self, chromosome_i: np.ndarray):
-        chromosome = chromosome_i.copy()
-        a = np.random.randint(0, chromosome.shape[0] - 1)
-        b = np.random.randint(0, chromosome.shape[0] - 1)
+    #     while t <= MaxGenerations:
 
-        while True:
-            b = np.random.randint(0, chromosome.shape[0] - 1)
-            if a != b:
-                break
+    #         pop_objs_fun = self.population_objs_fun(population_t)
+    #         pop_fit_evals = self.fitness_eval(pop_objs_fun)
+    #         selected_mating_pool = self.selection_rank_elite2(
+    #             pop_fit_evals= pop_fit_evals, 
+    #             ElitePopSize= ElitePopSize,
+    #             subPopSize= subPopSize
+    #         )
 
-        chromosome[a], chromosome[b] = chromosome[b], chromosome[a]
+    #         mating_pool = np.take( population_t,selected_mating_pool,axis=0)
+    #         offspring1 = self.crossover(mating_pool, PopSize, ElitePopSize, CrossPro=0.9)
+    #         offspring1 = self.mutation(offspring1, PopSize, ElitePopSize, MutPro=0.2)
+    #         population_t = offspring1.copy()
 
-        return chromosome
-    
+    #         # minIndex = np.argmin([self.objective_function(chro) for chro in population_t])
 
+    #         # if self.objective_function(population_t[minIndex]) < self.objective_function(bestChrom):
+    #         #     bestChrom = population_t[minIndex].copy()
+    #         print(f'tiempo {t}')
+    #         print(population_t[0:20])
+    #         t += 1
 
-    def localSearch(self, PopSize: int, Chrom):   
-        population = np.zeros(shape=(PopSize, Chrom.shape[0]))
-        for i in range(0, PopSize):
-            interchange_method = np.random.choice([self.lambdaInterchange, self.normalInterchange])
-            population[i] = interchange_method(Chrom)
-        return population
-    
+    #     #print(bestChrom)
+    #     print(population_t[0:30])
 
-
-    def ga(self,x0: np.ndarray, PopSize: int, ChroSize: int, ElitePopSize: int=0, subPopSize: int=0, MaxGenerations: int=0):
+    def climatic_evolutionary_search(self, PopSize: int, ChroSize: int, ElitePopSize: int=0, subPopSize: int=0, MaxGenerations: int=0):
      
         t: int = 0
         
-        population_t = self.localSearch(PopSize, x0)
+        population_t = self.initial_population(PopSize, ChroSize)
+        # chooseIndex = np.random.randint(0, population_t.shape[0])
+        # bestChrom = population_t[chooseIndex].copy()
 
         while t <= MaxGenerations:
+
             pop_objs_fun = self.population_objs_fun(population_t)
             pop_fit_evals = self.fitness_eval(pop_objs_fun)
             mating_pool = self.selection_rank_elite2(
@@ -902,53 +890,14 @@ class CES:
                 ElitePopSize= ElitePopSize,
                 subPopSize= subPopSize
             )
+            print('time: ', t)
+            print(mating_pool)
             offspring1 = self.crossover(mating_pool, PopSize, ElitePopSize, CrossPro=0.9)
             offspring1 = self.mutation(offspring1, PopSize, ElitePopSize, MutPro=0.2)
             population_t = offspring1.copy()
 
+
             t += 1
-
-        return population_t
-        
-        
-
-
-
-    def climatic_evolutionary_search(self, PopSize: int, ChroSize: int, ElitePopSize: int=0, subPopSize: int=0, MaxGenerations: int=0):
-
-        self.step = 1 
-        self.accept = 0
-
-
-
-        while self.stopping_restrictions(self.step):
-            neighbors = self.ga(
-                self._x_current, 
-                PopSize= PopSize, 
-                ChroSize= ChroSize, 
-                ElitePopSize= ElitePopSize, 
-                subPopSize= subPopSize, 
-                MaxGenerations= MaxGenerations    
-            )
-            x_neighbor = self.bestIndividual(neighbors)
-            e_neighbor = self.objective_function(x_neighbor)
-            e_delta =  e_neighbor - self._e_current # calculamos la diff de energia del vecino con la actual
-
-            if random() < self.safe_exp(- e_delta / self.t): 
-                self._x_current = x_neighbor 
-                self._e_current = e_neighbor 
-                self.accept += 1 
-
-            if self._e_current < self._e_best: 
-                self._e_best = self.e_current 
-                self._x_best = self.x_current
-
-            self.update_history()
-            self.t = self.cooling_operator(self.step) #enfriamos
-            self.step += 1
-            print(self.step)
-        self._band = True
-
 
 
 
@@ -1002,6 +951,3 @@ class CES:
     def get_total_cost_and_vehicles(self, ):
         pass
 
-#https://www.sciencedirect.com/science/article/pii/S0360835214003453
-#https://www.mdpi.com/2076-3417/8/12/2621#
-#https://www.sciencedirect.com/science/article/pii/S0957417419308681
