@@ -132,6 +132,7 @@ class CES:
         self._e_best: float = self._e_current
         self.step: int = 0
         self.accept: int = 0
+        self.k_converge: int = 0 
         self._band: bool = False
 
     def proximity(self, waitTime: float, urgencyTime: float,  timeRemaining: float, alpha: float=0.33, beta: float= 0.34, gamma: float=0.33) -> float:
@@ -139,8 +140,6 @@ class CES:
         
 
     def nearestNeighborHeuristic(self, chromSize) -> np.ndarray:
-
-
 
         chromList = list()
         noSelected = set(N[1:-1])
@@ -272,7 +271,7 @@ class CES:
 
     
     def stopping_restrictions(self, step):
-        return step < self.step_max and self.t >= self.t_min and self.t > 0
+        return step < self.step_max and self.t >= self.t_min and self.t > 0 and self.k_converge > 5
     
     def generate_neighbor(self, x: np.ndarray):
         pass
@@ -614,7 +613,7 @@ class CES:
                 infoData['TiempoArco'].append(time_t)   
                 infoData['TW_A'].append(a[chromosome[idx]])
                 infoData['TW_B'].append(b[chromosome[idx]])
-                infoData['Tanque'].append(fuel_expen_t)
+                infoData['Tanque'].append(T[vehicle_n] -  fuel_expen_t)
                 infoData['CO2'].append(co2_gen)
 
             # arrival in tw
@@ -635,7 +634,7 @@ class CES:
                 infoData['TiempoArco'].append(time_t)   
                 infoData['TW_A'].append(a[chromosome[idx]])
                 infoData['TW_B'].append(b[chromosome[idx]])
-                infoData['Tanque'].append(fuel_expen_t)
+                infoData['Tanque'].append(T[vehicle_n] - fuel_expen_t)
                 infoData['CO2'].append(co2_gen)
             
 
@@ -660,7 +659,7 @@ class CES:
                 infoData['TW_A'].append(a[0])
                 infoData['TW_B'].append(b[0])
 
-                infoData['Tanque'].append(fuel_expen_t)
+                infoData['Tanque'].append(T[vehicle_n] - fuel_expen_t)
                 infoData['CO2'].append(co2_gen_wh)
 
 
@@ -706,7 +705,7 @@ class CES:
             infoData['TW_A'].append(a[0])
             infoData['TW_B'].append(b[0])
 
-            infoData['Tanque'].append(fuel_expen_t)
+            infoData['Tanque'].append(T[vehicle_n] - fuel_expen_t)
             infoData['CO2'].append(co2_gen_wh)
 
         if summary:
@@ -830,7 +829,7 @@ class CES:
         for i in range(0, population.shape[0]):
             popCopy[i] = self.differentialExchangeSequence(best,popCopy[i])
             if self.objective_function(popCopy[i]) < self.objective_function(population[i]):
-                print(True)
+                #print(True)
                 population[i] = popCopy[i]
         return population
             
@@ -863,6 +862,9 @@ class CES:
         return chrom
     
     def normalInterchange(self, chromosome_i: np.ndarray):
+        pass
+    
+    def swapOperator(self, chromosome_i: np.ndarray):
         chromosome = chromosome_i.copy()
         a = np.random.randint(0, chromosome.shape[0] - 1)
         b = np.random.randint(0, chromosome.shape[0] - 1)
@@ -877,12 +879,129 @@ class CES:
         return chromosome
     
 
+    def swap2Operator(self, chrom: np.ndarray):
+        chrom = chrom.astype(int)
+        decode: dict = self.decoding(chrom) 
+        n_routes: int = len(decode)
 
-    def localSearch(self, PopSize: int, Chrom):   
-        population = np.zeros(shape=(PopSize, Chrom.shape[0]))
+        x, y = np.random.choice(range(n_routes), size=2, replace=False)
+
+        i_index = np.random.choice(range(0,len(decode[x])-1), size=1)[0]
+        j_index = np.random.choice(range(0,len(decode[y])-1), size=1)[0]
+
+        decode[x][i_index], decode[y][j_index] = decode[y][j_index], decode[x][i_index]
+        
+        new_chrom = self.encoding(decode)
+        return new_chrom
+
+    
+    def swapOperator(self, chromosome_i: np.ndarray):
+        chromosome = chromosome_i.copy()
+        a = np.random.randint(0, chromosome.shape[0])
+        b = np.random.randint(0, chromosome.shape[0])
+
+        while True:
+            b = np.random.randint(0, chromosome.shape[0])
+            if a != b:
+                break
+
+        chromosome[a], chromosome[b] = chromosome[b], chromosome[a]
+
+        return chromosome
+    
+    def scrambledSubstring(self, chromosome_i: np.ndarray):
+        chromosome = chromosome_i.copy()
+        a = np.random.randint(0, chromosome.shape[0])
+        b = np.random.randint(0, chromosome.shape[0])
+
+        while True:
+            b = np.random.randint(0, chromosome.shape[0])
+            if a != b:
+                break
+        x = chromosome[a:b].copy()        
+        np.random.shuffle(x)
+        chromosome[a:b] = x
+        return chromosome
+    
+    def insertion(self, chromosome_i: np.ndarray):
+        x = chromosome_i.copy()
+        n = np.random.randint(1, x.shape[0]-2)
+        m = np.random.randint(1, x.shape[0])
+
+        while True:
+            m = np.random.randint(0, x.shape[0])
+            if  m > n:
+                break
+        return np.concatenate((x[:n],x[n+1:m],np.array([x[n]]),x[m:]))
+    
+    def reverseSubstring(self, chromosome_i: np.ndarray):
+        x = chromosome_i.copy()
+        n = np.random.randint(1, x.shape[0]-2)
+        m = np.random.randint(1, x.shape[0])
+
+        while True:
+            m = np.random.randint(n+1, x.shape[0])
+            if  m > n:
+                break
+        print(n)
+        print(m)
+        print(x[:n])
+        print(x[m:n-1:-1])
+        print(x[m+1:])
+        return np.concatenate((x[:n],x[m:n-1:-1] ,x[m+1:]))
+
+
+    def localSearch(self, Chrom: np.ndarray):
+        print('True')
+        x1 = self.swap2Operator(Chrom)
+        x2 = self.swapOperator(Chrom)
+        x3 = self.scrambledSubstring(Chrom)
+        x4 = self.insertion(Chrom)
+        x5 = self.reverseSubstring(Chrom)
+        x6 = self.mutation_operator(Chrom)
+        operations = [
+            x1,
+            x2,
+            x3,
+            x4,
+            x5,
+            x6,
+            self.crossover_operator(self._x_best, x1)[0],
+            self.crossover_operator(self._x_best, x1)[1],
+            self.crossover_operator(self._x_best, x2)[0],
+            self.crossover_operator(self._x_best, x2)[1],
+            self.crossover_operator(self._x_best, x3)[0],
+            self.crossover_operator(self._x_best, x3)[1],
+            self.crossover_operator(self._x_best, x4)[0],
+            self.crossover_operator(self._x_best, x4)[1],
+            self.crossover_operator(self._x_best, x5)[0],
+            self.crossover_operator(self._x_best, x5)[1],
+            self.crossover_operator(self._x_best, x6)[0],
+            self.crossover_operator(self._x_best, x6)[1],
+            self.differentialExchangeSequence(self.x_best, x1),
+            self.differentialExchangeSequence(self.x_best, x1),
+            self.differentialExchangeSequence(self.x_best, x1),
+            self.differentialExchangeSequence(self.x_best, x1),
+            self.differentialExchangeSequence(self.x_best, x1),
+            self.differentialExchangeSequence(self.x_best, x1),
+        ]
+ 
+        neighborhood = np.zeros(shape=(len(operations), Chrom.shape[0]))
+        
+        for i in range(0, len(operations)):
+            neighborhood[i] = operations[i]
+        return self.bestIndividual(neighborhood)
+
+    
+
+
+    def initialGeneration(self, PopSize: int, Chrom: np.ndarray):   
+        population = np.zeros(shape=(PopSize, Chrom.shape[0])) #generamos un vecindario
         for i in range(0, PopSize):
-            interchange_method = np.random.choice([self.lambdaInterchange, self.normalInterchange])
-            population[i] = interchange_method(Chrom)
+            population[i] = self.create_chromosome(Chrom.shape[0])
+            population[i] = self.lambdaInterchange(Chrom)
+            if self.objective_function(population[i]) > self.objective_function(Chrom):
+                population[i] = self.differentialExchangeSequence(Chrom, population[i])
         return population
     
 
@@ -890,10 +1009,13 @@ class CES:
     def ga(self,x0: np.ndarray, PopSize: int, ChroSize: int, ElitePopSize: int=0, subPopSize: int=0, MaxGenerations: int=0):
      
         t: int = 0
-        
-        population_t = self.localSearch(PopSize, x0)
+        ############### poblacion inicial ###############
+        population_t = self.initialGeneration(PopSize, x0)
+        self.k_converge = 0
+        ############### poblacion inicial ###############
+        #population_t = self.localSearch(PopSize, x0)
 
-        while t <= MaxGenerations:
+        while t <= MaxGenerations and  self.k_converge < 10:
             pop_objs_fun = self.population_objs_fun(population_t)
             pop_fit_evals = self.fitness_eval(pop_objs_fun)
             mating_pool = self.selection_rank_elite2(
@@ -904,11 +1026,20 @@ class CES:
             )
             offspring1 = self.crossover(mating_pool, PopSize, ElitePopSize, CrossPro=0.9)
             offspring1 = self.mutation(offspring1, PopSize, ElitePopSize, MutPro=0.2)
+            x_current = self.bestIndividual(offspring1)
+            if self.objective_function(x_current) < self.objective_function(self.x_best):
+                self._x_best = x_current.copy()
+                self._e_best = self.objective_function(self.x_current)
+                self.k_converge = 0
             population_t = offspring1.copy()
-
+            population_t = self.diffPopulationImprovement(self._x_best, population_t)
             t += 1
+            self.k_converge += 1
 
-        return population_t
+        self._x_current = self._x_best
+        self._e_current = self._e_best
+
+
         
         
 
@@ -918,19 +1049,25 @@ class CES:
 
         self.step = 1 
         self.accept = 0
+        self.k_converge = 0
 
 
+        #################### GA ##########################
+        self.ga(
+            x0= self._x_current, 
+            PopSize= PopSize, 
+            ChroSize= ChroSize, 
+            ElitePopSize= ElitePopSize, 
+            subPopSize= subPopSize, 
+            MaxGenerations= MaxGenerations
+        )
+        #################### GA ##########################
+
+        #################### SA ##########################
 
         while self.stopping_restrictions(self.step):
-            neighbors = self.ga(
-                self._x_current, 
-                PopSize= PopSize, 
-                ChroSize= ChroSize, 
-                ElitePopSize= ElitePopSize, 
-                subPopSize= subPopSize, 
-                MaxGenerations= MaxGenerations    
-            )
-            x_neighbor = self.bestIndividual(neighbors)
+
+            x_neighbor = self.localSearch(self._x_current)
             e_neighbor = self.objective_function(x_neighbor)
             e_delta =  e_neighbor - self._e_current # calculamos la diff de energia del vecino con la actual
 
@@ -942,19 +1079,16 @@ class CES:
             if self._e_current < self._e_best: 
                 self._e_best = self.e_current 
                 self._x_best = self.x_current
+                self.k_converge = 0
 
             self.update_history()
             self.t = self.cooling_operator(self.step) #enfriamos
             self.step += 1
+            self.k_converge += 1
             print(self.step)
         self._band = True
 
-
-
-
-
-
-    
+        #################### SA ##########################
 
     def generate_neighbor(self):
         return deepcopy(self.patient_exchange())
