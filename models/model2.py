@@ -135,7 +135,7 @@ class CES:
         self.k_converge: int = 0 
         self._band: bool = False
 
-    def proximity(self, waitTime: float, urgencyTime: float,  timeRemaining: float, alpha: float=0.33, beta: float= 0.34, gamma: float=0.33) -> float:
+    def proximity(self, waitTime: float, urgencyTime: float,  timeRemaining: float, alpha: float=0.33, beta: float= 0.33, gamma: float=0.34) -> float:
         return alpha * waitTime + beta * urgencyTime + gamma * timeRemaining
         
 
@@ -271,7 +271,7 @@ class CES:
 
     
     def stopping_restrictions(self, step):
-        return step < self.step_max and self.t >= self.t_min and self.t > 0 and self.k_converge > 5
+        return step < self.step_max and self.t >= self.t_min and self.t > 0 #and self.k_converge > 5
     
     def generate_neighbor(self, x: np.ndarray):
         pass
@@ -344,6 +344,8 @@ class CES:
 
 
     def update_history(self,):
+
+
         self.hist.append(
             {
                 'step': self.step,
@@ -714,7 +716,6 @@ class CES:
         return r
 
     def objective_function(self, chromosome: np.ndarray) -> float:
-        
         r , df = self.decoding(chromosome.astype(int), summary=True) 
         if len(r) == 0:
             return float('inf')
@@ -943,22 +944,17 @@ class CES:
             m = np.random.randint(n+1, x.shape[0])
             if  m > n:
                 break
-        print(n)
-        print(m)
-        print(x[:n])
-        print(x[m:n-1:-1])
-        print(x[m+1:])
         return np.concatenate((x[:n],x[m:n-1:-1] ,x[m+1:]))
 
 
     def localSearch(self, Chrom: np.ndarray):
-        print('True')
         x1 = self.swap2Operator(Chrom)
         x2 = self.swapOperator(Chrom)
         x3 = self.scrambledSubstring(Chrom)
         x4 = self.insertion(Chrom)
         x5 = self.reverseSubstring(Chrom)
         x6 = self.mutation_operator(Chrom)
+        x7 =self.differentialExchangeSequence(self.x_best, Chrom)
         operations = [
             x1,
             x2,
@@ -966,6 +962,11 @@ class CES:
             x4,
             x5,
             x6,
+            self.mutation_operator(x1),
+            self.mutation_operator(x2),
+            self.mutation_operator(x3),
+            self.mutation_operator(x4),
+            self.mutation_operator(x5),
             self.crossover_operator(self._x_best, x1)[0],
             self.crossover_operator(self._x_best, x1)[1],
             self.crossover_operator(self._x_best, x2)[0],
@@ -978,12 +979,15 @@ class CES:
             self.crossover_operator(self._x_best, x5)[1],
             self.crossover_operator(self._x_best, x6)[0],
             self.crossover_operator(self._x_best, x6)[1],
+            self.crossover_operator(self._x_best, x7)[0],
+            self.crossover_operator(self._x_best, x7)[1],
             self.differentialExchangeSequence(self.x_best, x1),
-            self.differentialExchangeSequence(self.x_best, x1),
-            self.differentialExchangeSequence(self.x_best, x1),
-            self.differentialExchangeSequence(self.x_best, x1),
-            self.differentialExchangeSequence(self.x_best, x1),
-            self.differentialExchangeSequence(self.x_best, x1),
+            self.differentialExchangeSequence(self.x_best, x2),
+            self.differentialExchangeSequence(self.x_best, x3),
+            self.differentialExchangeSequence(self.x_best, x4),
+            self.differentialExchangeSequence(self.x_best, x5),
+            self.differentialExchangeSequence(self.x_best, x6),
+            self.differentialExchangeSequence(self.x_best, x7),
         ]
  
         neighborhood = np.zeros(shape=(len(operations), Chrom.shape[0]))
@@ -1035,6 +1039,7 @@ class CES:
             population_t = self.diffPopulationImprovement(self._x_best, population_t)
             t += 1
             self.k_converge += 1
+            print(t)
 
         self._x_current = self._x_best
         self._e_current = self._e_best
@@ -1085,7 +1090,6 @@ class CES:
             self.t = self.cooling_operator(self.step) #enfriamos
             self.step += 1
             self.k_converge += 1
-            print(self.step)
         self._band = True
 
         #################### SA ##########################
