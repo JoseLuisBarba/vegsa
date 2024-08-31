@@ -20,12 +20,15 @@ def draw_graph(routeGraph: dict):
 
 
     nodes = list()
-    html_colors = generate_html_colors(len(routeGraph))
+    if len(routeGraph) > 1:
+        html_colors = generate_html_colors(len(routeGraph))
+    else:
+        html_colors = generate_html_colors(2)
 
     for vehicle, route in routeGraph.items():
         vehicleColor = html_colors[vehicle]
         for travel in route:
-            attributes = {'color': vehicleColor, 'window': f'{travel[0]}: [{a[travel[0]]},{b[travel[0]]}]'}
+            attributes = {'color': vehicleColor, 'window': f'{travel[0]}: \n [{a[travel[0]]},{b[travel[0]]}]'}
             nodes.append((travel[0], attributes))
 
     G.add_nodes_from(nodes)
@@ -51,6 +54,8 @@ def draw_graph(routeGraph: dict):
     ax.set_axis_off()
     #print([edge[2] for edge in edges])
     options = {"node_size": 500, "node_color": colors, 'labels':window,} #"node_color": colors
+    coords[:,0] = coords[:,0] -716
+    coords[:,1] = coords[:,1] -9100
     positions: dict = { id: pos for id, pos in zip(N[:len(N)-1], coords[:len(coords) - 1])}
     
     nx.draw_networkx(G, positions, with_labels=True, **options)
